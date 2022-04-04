@@ -1,3 +1,3 @@
 yarn create react-app ts_weather_app --template typescript
 
-yarn add redux react-redux redux-thunk redux-devtools-extension sass materialize-css @types/materialize-css @types/react-redux @types/redux-thunk axios @types/react-router @types/react-router-dom react-router react-router-dom
+yarn add redux react-redux redux-thunk redux-devtools-extension sass materialize-css @types/materialize-css @types/react-redux @types/redux-thunk axios @types/react-router @types/react-router-dom react-router react-router-dom react-load-script
