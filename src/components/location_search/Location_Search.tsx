@@ -1,124 +1,71 @@
-import React from "react";
-import { FormikProps } from "formik";
-import { RouteComponentProps } from "react-router-dom";
-// import { create_product } from "../../action_creators/product_actions";
-import { useFormik } from "formik";
-import { useDispatch } from "react-redux";
-import { useHistory } from "react-router-dom";
+import React, { useState, useEffect, useRef } from "react";
 
-// interface I_product {
-//   id: number;
-//   name: string;
-//   type: string;
-//   weight: string;
-//   inventory_count: number;
-// }
+let auto_complete: any;
 
-// interface I_create_product_form_values {
-//   name: string;
-//   type: string;
-//   weight: string;
-//   inventory_count: number;
-// }
+const loadScript = (url: any, callback: any) => {
 
-// interface I_props extends FormikProps<I_create_product_form_values> {
-//   history: History;
-//   get_product: (id: number) => Promise<void>;
-//   create_product: (
-//     form_data: I_create_product_form_values,
-//     history: History
-//   ) => Promise<void>;
-// }
+  let script = document.createElement("script");
+  script.type = "text/javascript";
+
+  if ((script as any).readyState) {
+    (script as any).onreadystatechange = function () {
+      if ((script as any).readyState === "loaded" || (script as any).readyState === "complete") {
+        (script as any).onreadystatechange = null;
+        callback();
+      }
+    };
+  } else {
+    script.onload = () => callback();
+  }
+
+  script.src = url;
+  document.getElementsByTagName("head")[0].appendChild(script);
+};
+
+function handleScriptLoad(updateQuery: any, auto_completeRef: any) {
+  auto_complete = new (window as any).google.maps.places.Autocomplete(
+    auto_completeRef.current,
+    { types: ["(cities)"], componentRestrictions: { country: "us" } }
+  );
+  auto_complete.setFields(["address_components", "formatted_address"]);
+  auto_complete.addListener("place_changed", () =>
+    handlePlaceSelect(updateQuery)
+  );
+}
+
+async function handlePlaceSelect(updateQuery: any) {
+  const addressObject = auto_complete.getPlace();
+  const query = addressObject.formatted_address;
+  updateQuery(query);
+  console.log(addressObject);
+}
 
 function Location_Search() {
+  const [query, setQuery] = useState("");
+  const auto_completeRef = useRef(null);
+
+  useEffect(() => {
+    loadScript(
+      `https://maps.googleapis.com/maps/api/js?key=${process.env.REACT_APP_GOOGLE_API_KEY!}&libraries=places`,
+      () => handleScriptLoad(setQuery, auto_completeRef)
+    );
+  }, []);
+
+
+  useEffect(() => {
+    console.log(query);
+  }, [query]);
+
   return (
-    <div className="container">
-      <div className="row mt-50">
-        <div className="col m4 offset-m4 center-align">
-          <h1>Enter a Location</h1>
-        </div>
-      </div>
-      {/* <Create_Product_Form /> */}
+    <div className="search-location-input">
+      <input
+        ref={auto_completeRef}
+        onChange={(event) => setQuery(event.target.value)}
+        placeholder="Enter a City"
+        value={query}
+      />
     </div>
   );
 }
 
-// const Create_Product: React.FC<I_props & RouteComponentProps> = (props) => {
-//   return (
-//     <div className="container">
-//       <div className="row mt-50">
-//         <div className="col m4 offset-m4 center-align">
-//           <h1>Create Product</h1>
-//         </div>
-//       </div>
-//       <Create_Product_Form />
-//     </div>
-//   );
-// };
-
-// const Create_Product_Form: React.FC<{}> = () => {
-//   const history = useHistory();
-
-//   const dispatch = useDispatch();
-
-//   const { handleSubmit, getFieldProps } = useFormik({
-//     initialValues: {
-//       name: "",
-//       type: "",
-//       weight: "",
-//       inventory_count: undefined,
-//     },
-//     onSubmit: (values) => {
-//       dispatch(create_product(values, history));
-//     },
-//   });
-//   return (
-//     <form onSubmit={handleSubmit}>
-//       <div className="row mt-50">
-//         <div className="input-field col m4 offset-m4">
-//           <label htmlFor="name" className="active custom-label">
-//             Name
-//           </label>
-//           <input id="name" type="text" {...getFieldProps("name")} />
-//         </div>
-//       </div>
-//       <div className="row mt-50">
-//         <div className="input-field col m4 offset-m4">
-//           <label htmlFor="type" className="active custom-label">
-//             Type
-//           </label>
-//           <input id="type" type="text" {...getFieldProps("type")} />
-//         </div>
-//       </div>
-//       <div className="row mt-50">
-//         <div className="input-field col m4 offset-m4">
-//           <label htmlFor="weight" className="active custom-label">
-//             Weight
-//           </label>
-//           <input id="weight" type="text" {...getFieldProps("weight")} />
-//         </div>
-//       </div>
-//       <div className="row mt-50">
-//         <div className="input-field col m4 offset-m4">
-//           <label htmlFor="inventory_count" className="active custom-label">
-//             Inventory Count
-//           </label>
-//           <input
-//             id="inventory_count"
-//             type="number"
-//             {...getFieldProps("inventory_count")}
-//           />
-//         </div>
-//       </div>
-//       <div className="row">
-//         <div className="col m4 offset-m4">
-//           <button type="submit" className="btn right">
-//             Create
-//           </button>
-//         </div>
-//       </div>
-//     </form>
-//   );
-// };
-
-// export default Create_Product;
+export default Location_Search;
