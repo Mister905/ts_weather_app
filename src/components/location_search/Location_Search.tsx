@@ -1,15 +1,20 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
+import { useDispatch } from "react-redux";
+import { useFormik } from "formik";
+import { get_location_weather } from "../../action_creators/location_actions";
 
 let auto_complete: any;
 
-const loadScript = (url: any, callback: any) => {
-
+const load_script = (url: any, callback: any) => {
   let script = document.createElement("script");
   script.type = "text/javascript";
 
   if ((script as any).readyState) {
     (script as any).onreadystatechange = function () {
-      if ((script as any).readyState === "loaded" || (script as any).readyState === "complete") {
+      if (
+        (script as any).readyState === "loaded" ||
+        (script as any).readyState === "complete"
+      ) {
         (script as any).onreadystatechange = null;
         callback();
       }
@@ -22,48 +27,78 @@ const loadScript = (url: any, callback: any) => {
   document.getElementsByTagName("head")[0].appendChild(script);
 };
 
-function handleScriptLoad(updateQuery: any, auto_completeRef: any) {
+function handle_script_load(auto_complete_ref: any, setFieldValue: any) {
   auto_complete = new (window as any).google.maps.places.Autocomplete(
-    auto_completeRef.current,
-    { types: ["(cities)"], componentRestrictions: { country: "us" } }
+    auto_complete_ref.current,
+    { types: ["(cities)"] }
   );
-  auto_complete.setFields(["address_components", "formatted_address"]);
+  auto_complete.setFields(["formatted_address", "geometry"]);
   auto_complete.addListener("place_changed", () =>
-    handlePlaceSelect(updateQuery)
+    handle_place_select(setFieldValue)
   );
 }
 
-async function handlePlaceSelect(updateQuery: any) {
-  const addressObject = auto_complete.getPlace();
-  const query = addressObject.formatted_address;
-  updateQuery(query);
-  console.log(addressObject);
+async function handle_place_select(setFieldValue: any) {
+  const address_object = auto_complete.getPlace();
+  const location = address_object.formatted_address;
+  setFieldValue("location", location);
+  setFieldValue("lat", address_object.geometry.location.lat());
+  setFieldValue("lng", address_object.geometry.location.lng());
 }
 
 function Location_Search() {
-  const [query, setQuery] = useState("");
-  const auto_completeRef = useRef(null);
+  const dispatch = useDispatch();
+
+  const auto_complete_ref = useRef(null);
 
   useEffect(() => {
-    loadScript(
-      `https://maps.googleapis.com/maps/api/js?key=${process.env.REACT_APP_GOOGLE_API_KEY!}&libraries=places`,
-      () => handleScriptLoad(setQuery, auto_completeRef)
+    load_script(
+      `https://maps.googleapis.com/maps/api/js?key=${process.env
+        .REACT_APP_GOOGLE_API_KEY!}&libraries=places`,
+      () => handle_script_load(auto_complete_ref, setFieldValue)
     );
   }, []);
 
-
-  useEffect(() => {
-    console.log(query);
-  }, [query]);
+  const { handleSubmit, getFieldProps, setFieldValue } = useFormik({
+    initialValues: {
+      location: "",
+      lat: 0,
+      lng: 0,
+    },
+    onSubmit: ({ location, lat, lng }) => {
+      dispatch(get_location_weather(location, lat, lng));
+    },
+  });
 
   return (
-    <div className="search-location-input">
-      <input
-        ref={auto_completeRef}
-        onChange={(event) => setQuery(event.target.value)}
-        placeholder="Enter a City"
-        value={query}
-      />
+    <div className="container">
+      <div className="row mt-50">
+        <div className="col m4 offset-m4 center-align">
+          <h1 className="location-heading">Enter a Location</h1>
+        </div>
+      </div>
+      <form onSubmit={handleSubmit}>
+        <div className="row mt-50">
+          <div className="input-field col m4 offset-m4">
+            <label htmlFor="location" className="active custom-label">
+              Location
+            </label>
+            <input
+              id="location"
+              {...getFieldProps("location")}
+              ref={auto_complete_ref}
+              placeholder="Enter a City"
+            />
+          </div>
+        </div>
+        <div className="row">
+          <div className="col m4 offset-m4">
+            <button type="submit" className="btn right">
+              Enter
+            </button>
+          </div>
+        </div>
+      </form>
     </div>
   );
 }

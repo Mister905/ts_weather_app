@@ -10,4 +10,6 @@ touch .env
 
 ^ Make sure you add this to .gitignore
 
+For all custom environment variables in apps created via create-react-app, we need to use REACT_APP_ prefix in env var names - it's a requirement, if we don't follow the convention, variables will not be accessible in our application!
+
 REACT_APP_GOOGLE_API_KEY=<REDACTED>
